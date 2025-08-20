@@ -1,72 +1,67 @@
-const board = document.getElementById('board');
-const statusText = document.getElementById('status');
-const restartBtn = document.getElementById('restart');
+let startTime = 0;
+let elapsedTime = 0;
+let timerInterval;
+let isRunning = false;
 
-let currentPlayer = 'X';
-let gameActive = true;
-let gameState = ["", "", "", "", "", "", "", "", ""];
+const display = document.getElementById('display');
+const startBtn = document.getElementById('startBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const resetBtn = document.getElementById('resetBtn');
+const lapBtn = document.getElementById('lapBtn');
+const lapsList = document.getElementById('laps');
 
-// Winning combinations (index positions)
-const winConditions = [
-  [0,1,2], [3,4,5], [6,7,8], // Rows
-  [0,3,6], [1,4,7], [2,5,8], // Columns
-  [0,4,8], [2,4,6]           // Diagonals
-];
+function formatTime(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
 
-// Create cells
-function createBoard() {
-  board.innerHTML = '';
-  gameState = ["", "", "", "", "", "", "", "", ""];
-  currentPlayer = 'X';
-  gameActive = true;
-  statusText.textContent = "Player X's turn";
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
 
-  for (let i = 0; i < 9; i++) {
-    const cell = document.createElement('div');
-    cell.classList.add('cell');
-    cell.dataset.index = i;
-    board.appendChild(cell);
+function pad(num) {
+  return num.toString().padStart(2, '0');
+}
+
+function updateDisplay() {
+  display.textContent = formatTime(elapsedTime);
+}
+
+function startTimer() {
+  if (!isRunning) {
+    isRunning = true;
+    startTime = Date.now() - elapsedTime;
+    timerInterval = setInterval(() => {
+      elapsedTime = Date.now() - startTime;
+      updateDisplay();
+    }, 1000);
   }
 }
 
-// Handle cell click
-function handleCellClick(e) {
-  const cell = e.target;
-  const index = cell.dataset.index;
-
-  if (gameState[index] !== "" || !gameActive) return;
-
-  gameState[index] = currentPlayer;
-  cell.textContent = currentPlayer;
-
-  if (checkWin()) {
-    statusText.textContent = `Player ${currentPlayer} wins!`;
-    gameActive = false;
-  } else if (gameState.every(cell => cell !== "")) {
-    statusText.textContent = "It's a draw!";
-    gameActive = false;
-  } else {
-    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-    statusText.textContent = `Player ${currentPlayer}'s turn`;
+function pauseTimer() {
+  if (isRunning) {
+    isRunning = false;
+    clearInterval(timerInterval);
   }
 }
 
-// Check for a win
-function checkWin() {
-  return winConditions.some(condition => {
-    const [a, b, c] = condition;
-    return (
-      gameState[a] === currentPlayer &&
-      gameState[b] === currentPlayer &&
-      gameState[c] === currentPlayer
-    );
-  });
+function resetTimer() {
+  pauseTimer();
+  elapsedTime = 0;
+  updateDisplay();
+  lapsList.innerHTML = '';
 }
 
-// Restart game
-restartBtn.addEventListener('click', createBoard);
+function addLap() {
+  if (isRunning) {
+    const li = document.createElement('li');
+    li.textContent = formatTime(elapsedTime);
+    lapsList.appendChild(li);
+  }
+}
 
-// Initialize
-createBoard();
-board.addEventListener('click', handleCellClick);
-
+// Button Event Listeners
+startBtn.addEventListener('click', startTimer);
+pauseBtn.addEventListener('click', pauseTimer);
+resetBtn.addEventListener('click', resetTimer);
+lapBtn.addEventListener('click', addLap);
